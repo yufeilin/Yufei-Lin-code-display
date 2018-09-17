@@ -1,0 +1,12 @@
+Begin Tran InsertTran
+
+insert into SC(Sno,Cno) values('201215122','1');
+
+IF exists(select Sno from Student where Sno='201215122') and exists(select Cno from Course where Cno='1')
+BEGIN
+        commit Tran T1
+END
+ELSE
+BEGIN
+        rollback Tran T1
+END

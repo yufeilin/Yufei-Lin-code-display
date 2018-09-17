@@ -1,0 +1,11 @@
+int A,B,C,D;
+char E ;
+while A<C and B>D do
+	if A=1 	then
+		A:= B*C+37.23
+	else
+		repeat
+			A:=A*2
+		until (A+C)<=(B+D)
+	end
+end
