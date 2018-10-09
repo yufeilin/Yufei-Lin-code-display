@@ -1,8 +1,0 @@
-the combobox of doswidget update from private slot called by the signal from thespywidget;
-
-spywidget is produced while the spydialog 's character is not suitable for the demand ; at first tab ,when used baseClass of DialogQ ,press ESC and the dialog disappear;
-
-
-...that's embarrasing;
-
-
