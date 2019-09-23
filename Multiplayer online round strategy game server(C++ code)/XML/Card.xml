@@ -1,0 +1,66 @@
+<Card>
+	<CardInfo>
+		<CardType>MinionCard</CardType>
+		<CardSubInfo>
+			<CardID>BanelingCommando</CardID>
+			<CardName>爆虫突击队</CardName>
+		</CardSubInfo>
+	</CardInfo>
+
+	<CardInfo>
+		<CardType>MinionCard</CardType>
+		<CardSubInfo>
+			<CardID>RangerMarineSquad</CardID>
+			<CardName>游骑兵陆战队小队</CardName>
+		</CardSubInfo>
+	</CardInfo>
+	
+	<CardInfo>
+		<CardType>MinionCard</CardType>
+		<CardSubInfo>
+			<CardID>DominionSecurityForcesMarineSquad</CardID>
+			<CardName>帝国治安小队</CardName>
+		</CardSubInfo>
+	</CardInfo>
+	
+	<CardInfo>
+		<CardType>MinionCard</CardType>
+		<CardSubInfo>
+			<CardID>Raynor</CardID>
+			<CardName>吉姆雷诺</CardName>
+		</CardSubInfo>
+	</CardInfo>
+	
+	<CardInfo>
+		<CardType>MinionCard</CardType>
+		<CardSubInfo>
+			<CardID>ArmoredTransportSquad</CardID>
+			<CardName>装甲运输小队</CardName>
+		</CardSubInfo>
+	</CardInfo>
+	
+	<CardInfo>
+		<CardType>MinionCard</CardType>
+		<CardSubInfo>
+			<CardID>VikingPredatorFighterSquad</CardID>
+			<CardName>维京掠夺者</CardName>
+		</CardSubInfo>
+	</CardInfo>
+	
+	<CardInfo>
+		<CardType>MinionCard</CardType>
+		<CardSubInfo>
+			<CardID>VikingPredatorAssaulterSquad</CardID>
+			<CardName>维京掠夺者</CardName>
+		</CardSubInfo>
+	</CardInfo>
+	
+	<CardInfo>
+		<CardType>MinionCard</CardType>
+		<CardSubInfo>
+			<CardID>CivilianRebelGroup</CardID>
+			<CardName>武装平民小队</CardName>
+		</CardSubInfo>
+	</CardInfo>
+
+</Card>

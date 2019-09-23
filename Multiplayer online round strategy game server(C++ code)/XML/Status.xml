@@ -1,0 +1,83 @@
+<PieceStatus>
+
+	<PieceStatusInfo>
+		<PieceStatusID>BanelingCommando</PieceStatusID>
+		<PieceStatusName>爆虫突击队经典版</PieceStatusName>
+		<Position>0.0 0.0 0.0</Position>
+		<Scale>0.9 0.9 0.9</Scale>
+		<Rotation>0.0 0.0 0.0</Rotation>
+	</PieceStatusInfo>
+	
+	<PieceStatusInfo>
+		<PieceStatusID>RangerMarineSquad</PieceStatusID>
+		<PieceStatusName>游骑兵陆战队</PieceStatusName>
+		<Position>0.0 0.0 0.0</Position>
+		<Scale>0.9 0.9 0.9</Scale>
+		<Rotation>0.0 0.0 0.0</Rotation>
+	</PieceStatusInfo>
+	
+	<PieceStatusInfo>
+		<PieceStatusID>DominionSecurityForcesMarineSquad</PieceStatusID>
+		<PieceStatusName>帝国治安小队</PieceStatusName>
+		<Position>0.0 0.0 0.0</Position>
+		<Scale>0.9 0.9 0.9</Scale>
+		<Rotation>0.0 0.0 0.0</Rotation>
+	</PieceStatusInfo>
+	
+	<PieceStatusInfo>
+		<PieceStatusID>Raynor</PieceStatusID>
+		<PieceStatusName>吉姆雷诺</PieceStatusName>
+		<Position>0.0 0.0 0.0</Position>
+		<Scale>0.9 0.9 0.9</Scale>
+		<Rotation>0.0 0.0 0.0</Rotation>
+	</PieceStatusInfo>
+	
+	<PieceStatusInfo>
+		<PieceStatusID>ArmoredTransportSquad</PieceStatusID>
+		<PieceStatusName>装甲运输小队</PieceStatusName>
+		<Position>0.0 0.0 0.0</Position>
+		<Scale>0.9 0.9 0.9</Scale>
+		<Rotation>0.0 0.0 0.0</Rotation>
+	</PieceStatusInfo>
+	
+	<PieceStatusInfo>
+		<PieceStatusID>VikingPredatorFighterSquad</PieceStatusID>
+		<PieceStatusName>维京掠夺者</PieceStatusName>
+		<Position>0.0 0.0 0.0</Position>
+		<Scale>0.9 0.9 0.9</Scale>
+		<Rotation>0.0 0.0 0.0</Rotation>
+	</PieceStatusInfo>
+	
+	<PieceStatusInfo>
+		<PieceStatusID>VikingPredatorAssaulterSquad</PieceStatusID>
+		<PieceStatusName>维京掠夺者</PieceStatusName>
+		<Position>0.0 0.0 0.0</Position>
+		<Scale>0.9 0.9 0.9</Scale>
+		<Rotation>0.0 0.0 0.0</Rotation>
+	</PieceStatusInfo>
+	
+	<PieceStatusInfo>
+		<PieceStatusID>CivilianRebelGroup</PieceStatusID>
+		<PieceStatusName>武装平民小队</PieceStatusName>
+		<Position>0.0 0.0 0.0</Position>
+		<Scale>0.9 0.9 0.9</Scale>
+		<Rotation>0.0 0.0 0.0</Rotation>
+	</PieceStatusInfo>
+	
+	<PieceStatusInfo>
+		<PieceStatusID>DominionBroadcastingStation</PieceStatusID>
+		<PieceStatusName>帝国宣传台</PieceStatusName>
+		<Position>0.0 0.0 0.0</Position>
+		<Scale>0.9 0.9 0.9</Scale>
+		<Rotation>0.0 0.0 0.0</Rotation>
+	</PieceStatusInfo>
+	
+	<PieceStatusInfo>
+		<PieceStatusID>LogisticsWarehouse</PieceStatusID>
+		<PieceStatusName>帝国后勤仓库</PieceStatusName>
+		<Position>0.0 0.0 0.0</Position>
+		<Scale>0.9 0.9 0.9</Scale>
+		<Rotation>0.0 0.0 0.0</Rotation>
+	</PieceStatusInfo>
+
+</PieceStatus>

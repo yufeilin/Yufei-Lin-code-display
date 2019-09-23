@@ -1,0 +1,94 @@
+<Effect>
+	<EffectInfo>
+		<EffectType>DealDamage</EffectType>
+		<EffectSubInfo>
+			<EffectID>BaseWeapon1Damage</EffectID>
+			<EffectName>基本测试武器1伤害效果</EffectName>
+			<DamageAmount>5.0</DamageAmount>
+			<ExecutionProbability>1.0</ExecutionProbability>
+		</EffectSubInfo>	
+	</EffectInfo>
+	
+	<EffectInfo>
+		<EffectType>DealDamage</EffectType>
+		<EffectSubInfo>
+			<EffectID>BaseWeapon2Damage</EffectID>
+			<EffectName>基本测试武器2伤害效果</EffectName>
+			<DamageAmount>6.0</DamageAmount>
+			<ExecutionProbability>1.0</ExecutionProbability>
+		</EffectSubInfo>	
+	</EffectInfo>
+
+	<EffectInfo>
+		<EffectType>DealDamage</EffectType>
+		<EffectSubInfo>
+			<EffectID>RangerC12GunDamage</EffectID>
+			<EffectName>游骑兵陆战队武器伤害效果</EffectName>
+			<DamageAmount>6.0</DamageAmount>
+			<ExecutionProbability>1.0</ExecutionProbability>
+		</EffectSubInfo>	
+	</EffectInfo>
+	
+	<EffectInfo>
+		<EffectType>DealDamage</EffectType>
+		<EffectSubInfo>
+			<EffectID>DominionC12GunDamage</EffectID>
+			<EffectName>帝国治安小队武器伤害效果</EffectName>
+			<DamageAmount>7.0</DamageAmount>
+			<ExecutionProbability>1.0</ExecutionProbability>
+		</EffectSubInfo>	
+	</EffectInfo>
+	
+	<EffectInfo>
+		<EffectType>DealDamage</EffectType>
+		<EffectSubInfo>
+			<EffectID>RaynorC12GunDamage</EffectID>
+			<EffectName>吉姆雷诺武器伤害效果</EffectName>
+			<DamageAmount>9.0</DamageAmount>
+			<ExecutionProbability>1.0</ExecutionProbability>
+		</EffectSubInfo>	
+	</EffectInfo>
+	
+	<EffectInfo>
+		<EffectType>DealDamage</EffectType>
+		<EffectSubInfo>
+			<EffectID>VehicleTurretDamage</EffectID>
+			<EffectName>装甲运输载具武器伤害效果</EffectName>
+			<DamageAmount>5.0</DamageAmount>
+			<ExecutionProbability>1.0</ExecutionProbability>
+		</EffectSubInfo>	
+	</EffectInfo>
+	
+	<EffectInfo>
+		<EffectType>DealDamage</EffectType>
+		<EffectSubInfo>
+			<EffectID>LanzelTorpedoDamage</EffectID>
+			<EffectName>维京掠夺者（战机）武器伤害效果</EffectName>
+			<DamageAmount>20.0</DamageAmount>
+			<ExecutionProbability>1.0</ExecutionProbability>
+		</EffectSubInfo>	
+	</EffectInfo>
+	
+	<EffectInfo>
+		<EffectType>DealDamage</EffectType>
+		<EffectSubInfo>
+			<EffectID>100mmMachineGunDamage</EffectID>
+			<EffectName>维京掠夺者（机甲）武器伤害效果</EffectName>
+			<DamageAmount>8.0</DamageAmount>
+			<ExecutionProbability>1.0</ExecutionProbability>
+		</EffectSubInfo>	
+	</EffectInfo>
+	
+	<EffectInfo>
+		<EffectType>DealDamage</EffectType>
+		<EffectSubInfo>
+			<EffectID>MolotovCocktailDamage</EffectID>
+			<EffectName>武装平民武器伤害效果</EffectName>
+			<DamageAmount>10.0</DamageAmount>
+			<ExecutionProbability>1.0</ExecutionProbability>
+		</EffectSubInfo>	
+	</EffectInfo>
+	
+	
+	
+</Effect>

@@ -1,0 +1,105 @@
+<Unit>
+	<UnitInfo>
+		<UnitID>Baneling</UnitID>
+		<UnitName>测试爆虫</UnitName>
+		<UnitMaxHealth>35</UnitMaxHealth>
+		<UnitSize>3.0</UnitSize>
+		<UnitWeaponList>
+			<WeaponID>BaseWeapon1</WeaponID>
+		</UnitWeaponList>
+	</UnitInfo>
+	<UnitInfo>
+		<UnitID>Goliath</UnitID>
+		<UnitName>测试歌莉娅</UnitName>
+		<UnitMaxHealth>55</UnitMaxHealth>
+		<UnitSize>4.0</UnitSize>
+		<UnitWeaponList>
+			<WeaponID>BaseWeapon2</WeaponID>
+		</UnitWeaponList>
+	</UnitInfo>
+	
+	<UnitInfo>
+		<UnitID>RangerMarine</UnitID>
+		<UnitName>游骑兵陆战队员</UnitName>
+		<UnitMaxHealth>45</UnitMaxHealth>
+		<UnitSize>2.5</UnitSize>
+		<UnitWeaponList>
+			<WeaponID>RangerC12Gun</WeaponID>
+		</UnitWeaponList>
+	</UnitInfo>
+	
+	<UnitInfo>
+		<UnitID>DominionSecurityForcesMarine</UnitID>
+		<UnitName>帝国治安小队陆战队员</UnitName>
+		<UnitMaxHealth>50</UnitMaxHealth>
+		<UnitSize>2.6</UnitSize>
+		<UnitWeaponList>
+			<WeaponID>DominionC12Gun</WeaponID>
+		</UnitWeaponList>
+	</UnitInfo>
+	
+	<UnitInfo>
+		<UnitID>RaynorMarine</UnitID>
+		<UnitName>吉姆雷诺</UnitName>
+		<UnitMaxHealth>300</UnitMaxHealth>
+		<UnitSize>3.0</UnitSize>
+		<UnitWeaponList>
+			<WeaponID>RaynorC12Gun</WeaponID>
+		</UnitWeaponList>
+	</UnitInfo>
+	
+	<UnitInfo>
+		<UnitID>ArmoredTransportVehicle</UnitID>
+		<UnitName>装甲运输载具</UnitName>
+		<UnitMaxHealth>175</UnitMaxHealth>
+		<UnitSize>6.0</UnitSize>
+		<UnitWeaponList>
+			<WeaponID>VehicleTurret</WeaponID>
+		</UnitWeaponList>
+	</UnitInfo>
+	
+	<UnitInfo>
+		<UnitID>VikingPredatorFighter</UnitID>
+		<UnitName>维京掠夺者（战机）</UnitName>
+		<UnitMaxHealth>135</UnitMaxHealth>
+		<UnitSize>4.0</UnitSize>
+		<UnitWeaponList>
+			<WeaponID>LanzelTorpedo</WeaponID>
+		</UnitWeaponList>
+	</UnitInfo>
+	
+	<UnitInfo>
+		<UnitID>VikingPredatorAssaulter</UnitID>
+		<UnitName>维京掠夺者（机甲）</UnitName>
+		<UnitMaxHealth>135</UnitMaxHealth>
+		<UnitSize>4.0</UnitSize>
+		<UnitWeaponList>
+			<WeaponID>100mmMachineGun</WeaponID>
+		</UnitWeaponList>
+	</UnitInfo>
+	
+	<UnitInfo>
+		<UnitID>ArmedCivilian</UnitID>
+		<UnitName>武装平民</UnitName>
+		<UnitMaxHealth>30</UnitMaxHealth>
+		<UnitSize>2.7</UnitSize>
+		<UnitWeaponList>
+			<WeaponID>MolotovCocktail</WeaponID>
+		</UnitWeaponList>
+	</UnitInfo>
+	
+	<UnitInfo>
+		<UnitID>DominionBroadcastingStation</UnitID>
+		<UnitName>帝国宣传台</UnitName>
+		<UnitMaxHealth>280</UnitMaxHealth>
+		<UnitSize>5.8</UnitSize>
+	</UnitInfo>
+	
+	<UnitInfo>
+		<UnitID>LogisticsWarehouse</UnitID>
+		<UnitName>后勤仓库</UnitName>
+		<UnitMaxHealth>320</UnitMaxHealth>
+		<UnitSize>12.9</UnitSize>
+	</UnitInfo>
+
+</Unit>

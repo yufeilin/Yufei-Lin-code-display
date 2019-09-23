@@ -1,0 +1,73 @@
+<Weapon>
+	<WeaponInfo>
+		<WeaponID>BaseWeapon1</WeaponID>
+		<WeaponName>基本测试武器1</WeaponName>
+		<WeaponRange>5.0</WeaponRange>
+		<WeaponAttackInterval>0.8</WeaponAttackInterval>
+		<WeaponAttackEffect>BaseWeapon1Damage</WeaponAttackEffect>
+	</WeaponInfo>
+
+	<WeaponInfo>
+		<WeaponID>BaseWeapon2</WeaponID>
+		<WeaponName>基本测试武器2</WeaponName>
+		<WeaponRange>6.0</WeaponRange>
+		<WeaponAttackInterval>0.9</WeaponAttackInterval>
+		<WeaponAttackEffect>BaseWeapon2Damage</WeaponAttackEffect>
+	</WeaponInfo>
+
+	<WeaponInfo>
+		<WeaponID>RangerC12Gun</WeaponID>
+		<WeaponName>游骑兵陆战队武器</WeaponName>
+		<WeaponRange>6.0</WeaponRange>
+		<WeaponAttackInterval>0.85</WeaponAttackInterval>
+		<WeaponAttackEffect>RangerC12GunDamage</WeaponAttackEffect>
+	</WeaponInfo>
+	
+	<WeaponInfo>
+		<WeaponID>DominionC12Gun</WeaponID>
+		<WeaponName>帝国治安小队武器</WeaponName>
+		<WeaponRange>6.5</WeaponRange>
+		<WeaponAttackInterval>0.9</WeaponAttackInterval>
+		<WeaponAttackEffect>DominionC12GunDamage</WeaponAttackEffect>
+	</WeaponInfo>
+	
+	<WeaponInfo>
+		<WeaponID>RaynorC12Gun</WeaponID>
+		<WeaponName>吉姆雷诺武器</WeaponName>
+		<WeaponRange>6.8</WeaponRange>
+		<WeaponAttackInterval>0.8</WeaponAttackInterval>
+		<WeaponAttackEffect>RaynorC12GunDamage</WeaponAttackEffect>
+	</WeaponInfo>
+	
+	<WeaponInfo>
+		<WeaponID>VehicleTurret</WeaponID>
+		<WeaponName>装甲运输载具武器</WeaponName>
+		<WeaponRange>7.0</WeaponRange>
+		<WeaponAttackInterval>0.4</WeaponAttackInterval>
+		<WeaponAttackEffect>VehicleTurretDamage</WeaponAttackEffect>
+	</WeaponInfo>
+	
+	<WeaponInfo>
+		<WeaponID>LanzelTorpedo</WeaponID>
+		<WeaponName>维京掠夺者（战机）武器</WeaponName>
+		<WeaponRange>8.0</WeaponRange>
+		<WeaponAttackInterval>1.2</WeaponAttackInterval>
+		<WeaponAttackEffect>LanzelTorpedoDamage</WeaponAttackEffect>
+	</WeaponInfo>
+	
+	<WeaponInfo>
+		<WeaponID>100mmMachineGun</WeaponID>
+		<WeaponName>维京掠夺者（机甲）武器</WeaponName>
+		<WeaponRange>7.1</WeaponRange>
+		<WeaponAttackInterval>0.95</WeaponAttackInterval>
+		<WeaponAttackEffect>100mmMachineGunDamage</WeaponAttackEffect>
+	</WeaponInfo>
+	
+	<WeaponInfo>
+		<WeaponID>MolotovCocktail</WeaponID>
+		<WeaponName>武装平民武器</WeaponName>
+		<WeaponRange>5.4</WeaponRange>
+		<WeaponAttackInterval>0.66</WeaponAttackInterval>
+		<WeaponAttackEffect>MolotovCocktailDamage</WeaponAttackEffect>
+	</WeaponInfo>
+</Weapon>

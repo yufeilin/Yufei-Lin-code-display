@@ -1,0 +1,22 @@
+<PiecePedestal>
+
+	<PiecePedestalInfo>
+		<PiecePedestalID>TerrainePedestal1</PiecePedestalID>
+		<PiecePedestalName>人类基本棋子底座</PiecePedestalName>
+		<Position>0.0 0.0 0.0</Position>
+		<Scale>0.7 0.7 0.7</Scale>
+		<Rotation>0.0 0.0 0.0</Rotation>
+		<BasePostion>0.0 1.0 0.0</BasePostion>	
+	</PiecePedestalInfo>
+	
+	<PiecePedestalInfo>
+		<PiecePedestalID>TerrainePedestal2</PiecePedestalID>
+		<PiecePedestalName>人类基本棋子底座</PiecePedestalName>
+		<Position>0.0 0.0 0.0</Position>
+		<Scale>0.7 0.7 0.7</Scale>
+		<Rotation>0.0 0.0 0.0</Rotation>
+		<BasePostion>0.0 1.0 0.0</BasePostion>	
+	</PiecePedestalInfo>
+
+
+</PiecePedestal>
